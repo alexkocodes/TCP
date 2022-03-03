@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <assert.h>
+#include <unistd.h>
 
 #include "common.h"
 #include "packet.h"
