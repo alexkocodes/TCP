@@ -128,9 +128,13 @@ int main (int argc, char **argv)
     int usable_size = window_size;
 
     int flag = 1;
-    //while (flag == 1)
-    //{ 
-        while(usable_size - last_acked <= window_size && flag == 1 && last_sent <= usable_size){
+
+    while (flag == 1)
+    { 
+        //int pid = vfork();
+        //if (pid == 0){
+
+        while(last_sent - last_acked <= window_size && flag == 1){
 
             len = fread(buffer, 1, DATA_SIZE, fp); 
             if ( len <= 0)
@@ -177,9 +181,13 @@ int main (int argc, char **argv)
                 start_timer();
                 //ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
                 //struct sockaddr *src_addr, socklen_t *addrlen);
+                //}
+        }
+        //else{
+
         
-                //do
-                //{
+                do
+                {
                     //printf("%s\n", "here3");
                     if(recvfrom(sockfd, buffer, MSS_SIZE, 0,
                                 (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen) < 0)
@@ -195,15 +203,15 @@ int main (int argc, char **argv)
                     recvpkt = (tcp_packet *)buffer;
                     printf("%d \n", get_data_size(recvpkt));
                     assert(get_data_size(recvpkt) <= DATA_SIZE);
-                //}while(recvpkt->hdr.ackno < next_seqno);    //ignore duplicate ACKs
+                }while(recvpkt->hdr.ackno < next_seqno);    //ignore duplicate ACKs
                 stop_timer();
     
                 /*resend pack if don't recv ACK */
             //} while(recvpkt->hdr.ackno != next_seqno);      
-
-            free(sndpkt);
-        }
-    //}
+        
+            //free(sndpkt);
+    
+    }
 
     return 0;
 
