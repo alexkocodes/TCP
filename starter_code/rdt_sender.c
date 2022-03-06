@@ -130,7 +130,7 @@ int main (int argc, char **argv)
     int flag = 1;
 
 
-    while (flag)
+    while (1)
     { 
         // while loop for sending
         while(last_sent - last_acked < window_size && flag == 1){
@@ -198,8 +198,8 @@ int main (int argc, char **argv)
                 ackn_num = recvpkt->hdr.ackno/1456 - 1; // use this to identify which packet it is in the order
                 
                 printf("Returned packet num: %d\n", ackn_num); 
-                printf("%d\n", recvpkt->hdr.data_size);
-                if(recvpkt->hdr.data_size==0){
+                //printf("%d\n", recvpkt->hdr.ctr_flags);
+                if(recvpkt->hdr.ctr_flags == END){
                     break;
                 }
                 assert(get_data_size(recvpkt) <= DATA_SIZE);
