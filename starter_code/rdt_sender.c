@@ -125,16 +125,13 @@ int main (int argc, char **argv)
 
     int last_sent = 0;
     int last_acked = 0;
-    int usable_size = window_size;
 
     int flag = 1;
 
 
     while (flag == 1)
     { 
-        //int pid = vfork();
-        //if (pid == 0){
-
+        // while loop for sending
         while(last_sent - last_acked < window_size && flag == 1){
 
             len = fread(buffer, 1, DATA_SIZE, fp); 
@@ -154,9 +151,6 @@ int main (int argc, char **argv)
             memcpy(sndpkt->data, buffer, len);
             sndpkt->hdr.seqno = send_base;
 
-            //printf("%s\n", "here1");
-
-            //Wait for ACK
             //do {
 
                 //printf("%s\n", "here2");
@@ -175,42 +169,43 @@ int main (int argc, char **argv)
                     error("sendto failed.");
                 }
                 else{
-                    last_sent ++;
                     printf("last send: %d\n", last_sent);
+                    last_sent ++;
                 }
 
                 start_timer();
                 //ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
                 //struct sockaddr *src_addr, socklen_t *addrlen);
             }
-        //}
-        //else{
 
-                do
+            // while loop for receiving
+            do
+            {
+                
+                if(recvfrom(sockfd, buffer, MSS_SIZE, 0,
+                            (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen) < 0)
                 {
-                    //printf("%s\n", "here3");
-                    if(recvfrom(sockfd, buffer, MSS_SIZE, 0,
-                                (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen) < 0)
-                    {
-                        error("recvfrom failed.");
-                    }
-                    else{
-                        last_acked ++; // to check which packet has been acked
-                        usable_size ++; 
-                        VLOG(DEBUG, "last acked: %d", last_acked);
-                    }
+                    error("recvfrom failed.");
+                }
+                else{
+                    last_acked ++; // to check which packet has been acked, move the window forward
+                    //VLOG(DEBUG, "last acked: %d", next_seqno);
+                }
 
-                    recvpkt = (tcp_packet *)buffer;
-                    printf("%d \n", get_data_size(recvpkt));
-                    assert(get_data_size(recvpkt) <= DATA_SIZE);
-                }while(recvpkt->hdr.ackno < next_seqno);    //ignore duplicate ACKs
-                stop_timer();
-                //kill(pid, SIGKILL);
-                /*resend pack if don't recv ACK */
-            //} while(recvpkt->hdr.ackno != next_seqno);      
-        
-            //free(sndpkt);
-       //}
+                recvpkt = (tcp_packet *)buffer;
+                printf("%d \n", get_data_size(recvpkt));
+                int ackn_num = recvpkt->hdr.ackno/1456 - 1; // use this to identify which packet it is
+                
+                printf("Returned packet num: %d\n", ackn_num); 
+
+                assert(get_data_size(recvpkt) <= DATA_SIZE);
+            }while(recvpkt->hdr.ackno < next_seqno);    //ignore duplicate ACKs
+            stop_timer();
+            
+            /*resend pack if don't recv ACK */
+        //} while(recvpkt->hdr.ackno != next_seqno);      
+    
+        //free(sndpkt);
     }
     return 0;
 
