@@ -11,8 +11,8 @@
 #include <time.h>
 #include <assert.h>
 
-#include"packet.h"
-#include"common.h"
+#include "common.h"
+#include "packet.h"
 
 #define STDIN_FD    0
 #define RETRY  120 //millisecond
@@ -125,11 +125,12 @@ int main (int argc, char **argv)
 
     int last_sent = 0;
     int last_acked = 0;
+    int ackn_num = 0;
 
     int flag = 1;
 
 
-    while (flag == 1)
+    while (flag)
     { 
         // while loop for sending
         while(last_sent - last_acked < window_size && flag == 1){
@@ -139,10 +140,10 @@ int main (int argc, char **argv)
             {
                 VLOG(INFO, "End Of File has been reached");
                 sndpkt = make_packet(0);
+                sndpkt->hdr.ctr_flags = END;
                 sendto(sockfd, sndpkt, TCP_HDR_SIZE,  0,
                         (const struct sockaddr *)&serveraddr, serverlen);
                 flag = 0;
-                printf("flag: %i\n", flag);
                 break;
             }
             send_base = next_seqno;
@@ -194,17 +195,19 @@ int main (int argc, char **argv)
 
                 recvpkt = (tcp_packet *)buffer;
                 printf("%d \n", get_data_size(recvpkt));
-                int ackn_num = recvpkt->hdr.ackno/1456 - 1; // use this to identify which packet it is
+                ackn_num = recvpkt->hdr.ackno/1456 - 1; // use this to identify which packet it is in the order
                 
                 printf("Returned packet num: %d\n", ackn_num); 
-
+                printf("%d\n", recvpkt->hdr.data_size);
+                if(recvpkt->hdr.data_size==0){
+                    break;
+                }
                 assert(get_data_size(recvpkt) <= DATA_SIZE);
             //}while(recvpkt->hdr.ackno < next_seqno);    //ignore duplicate ACKs
             stop_timer();
             
             /*resend pack if don't recv ACK */
         //} while(recvpkt->hdr.ackno != next_seqno);      
-    
         //free(sndpkt);
     }
     return 0;
