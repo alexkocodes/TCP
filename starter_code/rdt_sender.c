@@ -179,8 +179,8 @@ int main (int argc, char **argv)
             }
 
             // while loop for receiving
-            do
-            {
+            //do
+            //{
                 
                 if(recvfrom(sockfd, buffer, MSS_SIZE, 0,
                             (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen) < 0)
@@ -199,7 +199,7 @@ int main (int argc, char **argv)
                 printf("Returned packet num: %d\n", ackn_num); 
 
                 assert(get_data_size(recvpkt) <= DATA_SIZE);
-            }while(recvpkt->hdr.ackno < next_seqno);    //ignore duplicate ACKs
+            //}while(recvpkt->hdr.ackno < next_seqno);    //ignore duplicate ACKs
             stop_timer();
             
             /*resend pack if don't recv ACK */
