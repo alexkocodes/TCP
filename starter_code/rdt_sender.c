@@ -17,9 +17,17 @@
 #define STDIN_FD    0
 #define RETRY  120 //millisecond
 
+#ifndef max
+    #define max(a,b) ((a) > (b) ? (a) : (b))
+#endif
+
 int next_seqno=0;
 int send_base=0;
 int window_size = 10; // change here
+
+int last_sent = 0;
+int last_acked = 0;
+int ackn_num = 0;
 
 int sockfd, serverlen;
 struct sockaddr_in serveraddr;
@@ -36,11 +44,13 @@ void resend_packets(int sig)
         //Resend all packets range between 
         //sendBase and nextSeqNum
         VLOG(INFO, "Timout happend");
+    
         if(sendto(sockfd, sndpkt, TCP_HDR_SIZE + get_data_size(sndpkt), 0, 
                     ( const struct sockaddr *)&serveraddr, serverlen) < 0)
         {
             error("sendto");
         }
+
     }
 }
 
@@ -118,14 +128,8 @@ int main (int argc, char **argv)
 
     assert(MSS_SIZE - TCP_HDR_SIZE > 0);
 
-    //Stop and wait protocol
-
     init_timer(RETRY, resend_packets);
     next_seqno = 0;
-
-    int last_sent = 0;
-    int last_acked = 0;
-    int ackn_num = 0;
 
     int flag = 1;
 
@@ -133,7 +137,7 @@ int main (int argc, char **argv)
     while (1)
     { 
         // while loop for sending
-        while(last_sent - last_acked < window_size && flag == 1){
+        while(last_sent - last_acked < window_size -1 && flag == 1){
 
             len = fread(buffer, 1, DATA_SIZE, fp); 
             if ( len <= 0)
@@ -170,11 +174,12 @@ int main (int argc, char **argv)
                     error("sendto failed.");
                 }
                 else{
+                    last_sent = send_base/1456;
                     printf("last send: %d\n", last_sent);
-                    last_sent ++;
                 }
 
                 start_timer();
+                printf("here\n");
                 //ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
                 //struct sockaddr *src_addr, socklen_t *addrlen);
             }
@@ -188,16 +193,11 @@ int main (int argc, char **argv)
                 {
                     error("recvfrom failed.");
                 }
-                else{
-                    last_acked ++; // to check which packet has been acked, move the window forward
-                    //VLOG(DEBUG, "last acked: %d", next_seqno);
-                }
-
                 recvpkt = (tcp_packet *)buffer;
                 printf("%d \n", get_data_size(recvpkt));
-                ackn_num = recvpkt->hdr.ackno/1456 - 1; // use this to identify which packet it is in the order
-                
-                printf("Returned packet num: %d\n", ackn_num); 
+                ackn_num = recvpkt->hdr.ackno/1456 ; // update the last_acked cursor. Move forward by 1.
+                last_acked = max(last_acked, ackn_num); // only check the biggest ACK. Cumulative ack.
+                printf("Returned ack num: %d\n", ackn_num); 
                 //printf("%d\n", recvpkt->hdr.ctr_flags);
                 if(recvpkt->hdr.ctr_flags == END){
                     break;
