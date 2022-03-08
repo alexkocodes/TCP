@@ -34,7 +34,9 @@ struct sockaddr_in serveraddr;
 struct itimerval timer; 
 tcp_packet *sndpkt;
 tcp_packet *recvpkt;
-sigset_t sigmask;       
+sigset_t sigmask;   
+
+tcp_packet *tcp_array[10];
 
 
 void resend_packets(int sig)
@@ -44,12 +46,17 @@ void resend_packets(int sig)
         //Resend all packets range between 
         //sendBase and nextSeqNum
         VLOG(INFO, "Timout happend");
-        
-        if(sendto(sockfd, sndpkt, TCP_HDR_SIZE + get_data_size(sndpkt), 0, 
-                    ( const struct sockaddr *)&serveraddr, serverlen) < 0)
-        {
-            error("sendto");
-        }
+
+        int i;
+        for (i=0; i<10; i++) {
+            sndpkt = tcp_array[i];
+            if(sendto(sockfd, sndpkt, TCP_HDR_SIZE + get_data_size(sndpkt), 0, 
+                        ( const struct sockaddr *)&serveraddr, serverlen) < 0)
+            {
+                error("sendto");
+            }
+            VLOG(DEBUG, "Sending packet %d to %s", sndpkt->hdr.seqno , inet_ntoa(serveraddr.sin_addr));
+        };
 
     }
 }
@@ -155,7 +162,9 @@ int main (int argc, char **argv)
             sndpkt = make_packet(len); // create the first packet
             memcpy(sndpkt->data, buffer, len);
             sndpkt->hdr.seqno = send_base;
+            
 
+            //printf("%d\n", tcp_array[last_sent % 10]->hdr.seqno);
             //do {
 
                 //printf("%s\n", "here2");
@@ -178,8 +187,9 @@ int main (int argc, char **argv)
                     printf("last send: %d\n", last_sent);
                 }
 
+                tcp_array[ last_sent % window_size] = sndpkt;
+
                 start_timer();
-                printf("here\n");
                 //ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
                 //struct sockaddr *src_addr, socklen_t *addrlen);
             }
