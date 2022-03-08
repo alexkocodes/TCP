@@ -117,8 +117,7 @@ int main(int argc, char **argv) {
 
         fseek(fp, recvpkt->hdr.seqno, SEEK_SET);
         fwrite(recvpkt->data, 1, recvpkt->hdr.data_size, fp);
-        sndpkt = make_packet(0);
-        sndpkt->hdr.ackno = recvpkt->hdr.seqno + recvpkt->hdr.data_size; // the next sequence number the receiver expects to receive
+        
         sndpkt = make_packet(0);
         sndpkt->hdr.ctr_flags = ACK;
         sndpkt->hdr.ackno = recvpkt->hdr.seqno + recvpkt->hdr.data_size;

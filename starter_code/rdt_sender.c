@@ -44,7 +44,7 @@ void resend_packets(int sig)
         //Resend all packets range between 
         //sendBase and nextSeqNum
         VLOG(INFO, "Timout happend");
-    
+        
         if(sendto(sockfd, sndpkt, TCP_HDR_SIZE + get_data_size(sndpkt), 0, 
                     ( const struct sockaddr *)&serveraddr, serverlen) < 0)
         {
@@ -195,6 +195,7 @@ int main (int argc, char **argv)
                 }
                 recvpkt = (tcp_packet *)buffer;
                 printf("%d \n", get_data_size(recvpkt));
+                
                 ackn_num = recvpkt->hdr.ackno/1456 ; // update the last_acked cursor. Move forward by 1.
                 last_acked = max(last_acked, ackn_num); // only check the biggest ACK. Cumulative ack.
                 printf("Returned ack num: %d\n", ackn_num); 
