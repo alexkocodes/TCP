@@ -39,6 +39,12 @@ sigset_t sigmask;
 tcp_packet *tcp_array[10];
 
 
+void start_timer()
+{
+    sigprocmask(SIG_UNBLOCK, &sigmask, NULL);
+    setitimer(ITIMER_REAL, &timer, NULL);
+}
+
 void resend_packets(int sig)
 {
     if (sig == SIGALRM)
@@ -55,18 +61,12 @@ void resend_packets(int sig)
             {
                 error("sendto");
             }
-            VLOG(DEBUG, "Sending packet %d to %s", sndpkt->hdr.seqno , inet_ntoa(serveraddr.sin_addr));
+            //VLOG(DEBUG, "Sending packet %d to %s", sndpkt->hdr.seqno , inet_ntoa(serveraddr.sin_addr));
         };
-
+        start_timer();
     }
 }
 
-
-void start_timer()
-{
-    sigprocmask(SIG_UNBLOCK, &sigmask, NULL);
-    setitimer(ITIMER_REAL, &timer, NULL);
-}
 
 
 void stop_timer()
