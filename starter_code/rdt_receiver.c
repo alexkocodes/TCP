@@ -118,9 +118,19 @@ int main(int argc, char **argv) {
         fseek(fp, recvpkt->hdr.seqno, SEEK_SET);
         fwrite(recvpkt->data, 1, recvpkt->hdr.data_size, fp);
         
+        int last_received_seq = 0;
+        
         sndpkt = make_packet(0);
         sndpkt->hdr.ctr_flags = ACK;
-        sndpkt->hdr.ackno = recvpkt->hdr.seqno + recvpkt->hdr.data_size;
+
+        if((recvpkt->hdr.seqno + recvpkt->hdr.data_size != last_received_seq + recvpkt->hdr.data_size) && last_received_seq != 0){
+            sndpkt->hdr.ackno = recvpkt->hdr.seqno + recvpkt->hdr.data_size;
+        }
+        else{
+            sndpkt->hdr.ackno = recvpkt->hdr.seqno + recvpkt->hdr.data_size;
+            last_received_seq = recvpkt->hdr.seqno;
+        }
+        // sndpkt->hdr.ackno = recvpkt->hdr.seqno + recvpkt->hdr.data_size;
 
         if (sendto(sockfd, sndpkt, TCP_HDR_SIZE, 0, 
                 (struct sockaddr *) &clientaddr, clientlen) < 0) {
