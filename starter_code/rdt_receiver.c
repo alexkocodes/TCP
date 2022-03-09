@@ -22,6 +22,7 @@
  */
 tcp_packet *recvpkt;
 tcp_packet *sndpkt;
+int last_received_seq = -1456;
 
 int main(int argc, char **argv) {
     int sockfd; /* socket */
@@ -118,12 +119,12 @@ int main(int argc, char **argv) {
         fseek(fp, recvpkt->hdr.seqno, SEEK_SET);
         fwrite(recvpkt->data, 1, recvpkt->hdr.data_size, fp);
         
-        int last_received_seq = -1456;
+        
         
         sndpkt = make_packet(0);
         sndpkt->hdr.ctr_flags = ACK;
-
-        if((recvpkt->hdr.seqno != last_received_seq + recvpkt->hdr.data_size)){
+        printf("\nHello %d %d\n", last_received_seq + recvpkt->hdr.data_size, recvpkt->hdr.seqno);
+        if((recvpkt->hdr.seqno != last_received_seq + recvpkt->hdr.data_size) && ((last_received_seq + recvpkt->hdr.data_size) % recvpkt->hdr.data_size == 0)){
             if (last_received_seq > 0){
                 sndpkt->hdr.ackno = last_received_seq + recvpkt->hdr.data_size;
             }
