@@ -149,7 +149,7 @@ int main (int argc, char **argv)
             len = fread(buffer, 1, DATA_SIZE, fp); 
             if ( len <= 0)
             {   
-                if(send_base == recvpkt->hdr.ackno - sndpkt->hdr.data_size){
+                if(send_base == recvpkt->hdr.ackno - sndpkt->hdr.data_size){ // if we receive the final ack, we send an END flag to tell the receiver we're done
       
                     VLOG(INFO, "End Of File has been reached");
                     sndpkt = make_packet(0);
