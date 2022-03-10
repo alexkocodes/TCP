@@ -13,6 +13,7 @@
 #include "common.h"
 #include "packet.h"
 
+int last_received_seq = -1456;
 
 /*
  * You are required to change the implementation to support
@@ -119,7 +120,7 @@ int main(int argc, char **argv) {
         fseek(fp, recvpkt->hdr.seqno, SEEK_SET);
         fwrite(recvpkt->data, 1, recvpkt->hdr.data_size, fp);
 
-        int last_received_seq = 0;
+        
         
         
         
