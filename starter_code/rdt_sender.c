@@ -61,9 +61,10 @@ void resend_packets(int sig)
             {
                 error("sendto");
             }
-            //VLOG(DEBUG, "Sending packet %d to %s", sndpkt->hdr.seqno , inet_ntoa(serveraddr.sin_addr));
+            VLOG(DEBUG, "Sending packet %d to %s", sndpkt->hdr.seqno , inet_ntoa(serveraddr.sin_addr));
+            start_timer();
         };
-        start_timer();
+        
     }
 }
 
@@ -156,6 +157,9 @@ int main (int argc, char **argv)
                     sndpkt->hdr.ctr_flags = END;
                     sendto(sockfd, sndpkt, TCP_HDR_SIZE,  0,
                             (const struct sockaddr *)&serveraddr, serverlen);
+                    tcp_array[window_size-1] = sndpkt;
+                    flag = 0;
+
                 }
                 break;
             }
@@ -189,7 +193,16 @@ int main (int argc, char **argv)
                     printf("last send: %d\n", last_sent);
                 }
 
-                tcp_array[ last_sent % window_size] = sndpkt;
+                if(last_sent<window_size){
+                    tcp_array[ last_sent % window_size] = sndpkt;
+                }
+                else{
+                    for(int i=0; i<window_size-1; i++){
+                        tcp_array[i] = tcp_array[i+1];
+                    };
+                    tcp_array[window_size-1] = sndpkt;
+                }
+
 
                 start_timer();
                 //ssize_t recvfrom(int sockfd, void *buf, size_t len, int flags,
@@ -199,6 +212,10 @@ int main (int argc, char **argv)
             // while loop for receiving
             //do
             //{
+
+                if(flag==0){
+                    break;
+                }
                 
                 if(recvfrom(sockfd, buffer, MSS_SIZE, 0,
                             (struct sockaddr *) &serveraddr, (socklen_t *)&serverlen) < 0)
@@ -209,6 +226,9 @@ int main (int argc, char **argv)
                 printf("%d \n", get_data_size(recvpkt));
                 
                 ackn_num = recvpkt->hdr.ackno/1456 ; // update the last_acked cursor. Move forward by 1.
+                if (ackn_num == last_acked){
+                    resend_packets(SIGALRM);
+                }
                 last_acked = max(last_acked, ackn_num); // only check the biggest ACK. Cumulative ack.
                 printf("Returned ack num: %d\n", ackn_num); 
                 //printf("%d\n", recvpkt->hdr.ctr_flags);
@@ -218,6 +238,9 @@ int main (int argc, char **argv)
                 assert(get_data_size(recvpkt) <= DATA_SIZE);
             //}while(recvpkt->hdr.ackno < next_seqno);    //ignore duplicate ACKs
             stop_timer();
+
+
+
             
             /*resend pack if don't recv ACK */
         //} while(recvpkt->hdr.ackno != next_seqno);      
