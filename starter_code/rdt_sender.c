@@ -148,13 +148,15 @@ int main (int argc, char **argv)
 
             len = fread(buffer, 1, DATA_SIZE, fp); 
             if ( len <= 0)
-            {
-                VLOG(INFO, "End Of File has been reached");
-                sndpkt = make_packet(0);
-                sndpkt->hdr.ctr_flags = END;
-                sendto(sockfd, sndpkt, TCP_HDR_SIZE,  0,
-                        (const struct sockaddr *)&serveraddr, serverlen);
-                flag = 0;
+            {   
+                if(send_base == recvpkt->hdr.ackno - sndpkt->hdr.data_size){
+      
+                    VLOG(INFO, "End Of File has been reached");
+                    sndpkt = make_packet(0);
+                    sndpkt->hdr.ctr_flags = END;
+                    sendto(sockfd, sndpkt, TCP_HDR_SIZE,  0,
+                            (const struct sockaddr *)&serveraddr, serverlen);
+                }
                 break;
             }
             send_base = next_seqno;
