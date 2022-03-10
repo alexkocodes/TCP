@@ -13,6 +13,7 @@
 #include "common.h"
 #include "packet.h"
 
+int last_received_seq = 0;
 
 /*
  * You are required to change the implementation to support
@@ -118,13 +119,18 @@ int main(int argc, char **argv) {
         fseek(fp, recvpkt->hdr.seqno, SEEK_SET);
         fwrite(recvpkt->data, 1, recvpkt->hdr.data_size, fp);
 
-        int last_received_seq = 0;
+        
         
         sndpkt = make_packet(0);
         sndpkt->hdr.ctr_flags = ACK;
-
-        if((recvpkt->hdr.seqno + recvpkt->hdr.data_size != last_received_seq + recvpkt->hdr.data_size) && last_received_seq != 0){
-            sndpkt->hdr.ackno = recvpkt->hdr.seqno + recvpkt->hdr.data_size;
+        printf("\nHello %d %d\n", last_received_seq + recvpkt->hdr.data_size, recvpkt->hdr.seqno);
+        if((recvpkt->hdr.seqno != last_received_seq + recvpkt->hdr.data_size) && ((last_received_seq + recvpkt->hdr.data_size) % recvpkt->hdr.data_size == 0)){
+            if (last_received_seq > 0){
+                sndpkt->hdr.ackno = last_received_seq + recvpkt->hdr.data_size;
+            }
+            else{
+                sndpkt->hdr.ackno = 0;
+            }   
         }
         else{
             sndpkt->hdr.ackno = recvpkt->hdr.seqno + recvpkt->hdr.data_size;
