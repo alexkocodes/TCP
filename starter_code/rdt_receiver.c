@@ -13,7 +13,7 @@
 #include "common.h"
 #include "packet.h"
 
-int last_received_seq = 0;
+int last_received_seq = -1456;
 
 /*
  * You are required to change the implementation to support
