@@ -126,9 +126,9 @@ int main(int argc, char **argv) {
         
         sndpkt = make_packet(0);
         sndpkt->hdr.ctr_flags = ACK;
-        printf("\nHello %d %d\n", last_received_seq + recvpkt->hdr.data_size, recvpkt->hdr.seqno);
+        //printf("\nHello %d %d\n", last_received_seq + recvpkt->hdr.data_size, recvpkt->hdr.seqno);
         if((recvpkt->hdr.seqno != last_received_seq + recvpkt->hdr.data_size) && ((last_received_seq + recvpkt->hdr.data_size) % recvpkt->hdr.data_size == 0)){
-            if (last_received_seq > 0){
+            if (last_received_seq >= 0){
                 sndpkt->hdr.ackno = last_received_seq + recvpkt->hdr.data_size;
             }
             else{
