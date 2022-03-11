@@ -13,7 +13,7 @@
 #include "common.h"
 #include "packet.h"
 
-int last_received_seq = -1456;
+
 
 /*
  * You are required to change the implementation to support
@@ -23,6 +23,7 @@ int last_received_seq = -1456;
  */
 tcp_packet *recvpkt;
 tcp_packet *sndpkt;
+int last_received_seq = -1456;
 
 int main(int argc, char **argv) {
     int sockfd; /* socket */
@@ -97,7 +98,7 @@ int main(int argc, char **argv) {
         }
         recvpkt = (tcp_packet *) buffer;
         assert(get_data_size(recvpkt) <= DATA_SIZE);
-        if ( recvpkt->hdr.data_size == 0) {
+        if ( recvpkt->hdr.data_size == 0 && recvpkt->hdr.ctr_flags == END) { // if we receive an END flag from the sender
             //VLOG(INFO, "End Of File has been reached");
             fclose(fp);
             VLOG(INFO, "End Of File has been reached");
@@ -121,6 +122,8 @@ int main(int argc, char **argv) {
 
         
         
+        
+        
         sndpkt = make_packet(0);
         sndpkt->hdr.ctr_flags = ACK;
         printf("\nHello %d %d\n", last_received_seq + recvpkt->hdr.data_size, recvpkt->hdr.seqno);
@@ -136,13 +139,6 @@ int main(int argc, char **argv) {
             sndpkt->hdr.ackno = recvpkt->hdr.seqno + recvpkt->hdr.data_size;
             last_received_seq = recvpkt->hdr.seqno;
         }
-        // sndpkt->hdr.ackno = recvpkt->hdr.seqno + recvpkt->hdr.data_size;
-
-
-        // sndpkt = make_packet(0);
-        // sndpkt->hdr.ackno = recvpkt->hdr.seqno + recvpkt->hdr.data_size; // the next sequence number the receiver expects to receive
-        // sndpkt = make_packet(0);
-        // sndpkt->hdr.ctr_flags = ACK;
         // sndpkt->hdr.ackno = recvpkt->hdr.seqno + recvpkt->hdr.data_size;
 
         if (sendto(sockfd, sndpkt, TCP_HDR_SIZE, 0, 
