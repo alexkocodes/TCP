@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <assert.h>
+#include<math.h>
 
 #include "common.h"
 #include "packet.h"
@@ -25,6 +26,9 @@ int next_seqno=0;
 int send_base=0;
 int window_size = 10; // change here
 
+float cwnd = 1.0; //
+int ssthresh = 64; //slow start threshold
+
 int last_sent = 0;
 int last_acked = 0;
 int ackn_num = 0;
@@ -37,7 +41,7 @@ tcp_packet *recvpkt;
 sigset_t sigmask;   
 
 tcp_packet *tcp_array[10];
-
+tcp_packet *sender_window;
 
 void start_timer()
 {
@@ -54,7 +58,7 @@ void resend_packets(int sig)
         VLOG(INFO, "Timout happend");
 
         int i;
-        for (i=0; i<10; i++) {
+        for (i=0; i<cwnd; i++) {
             sndpkt = tcp_array[i];
             if(sendto(sockfd, sndpkt, TCP_HDR_SIZE + get_data_size(sndpkt), 0, 
                         ( const struct sockaddr *)&serveraddr, serverlen) < 0)
@@ -144,7 +148,7 @@ int main (int argc, char **argv)
     while (1)
     { 
         // while loop for sending
-        while(last_sent - last_acked < window_size -1 && flag == 1){
+        while(last_sent - last_acked <= floor(cwnd) -1 && flag == 1){
 
             len = fread(buffer, 1, DATA_SIZE, fp); 
             if ( len <= 0)
@@ -209,8 +213,16 @@ int main (int argc, char **argv)
                 printf("%d \n", get_data_size(recvpkt));
                 
                 ackn_num = recvpkt->hdr.ackno/1456 ; // update the last_acked cursor. Move forward by 1.
+                if(cwnd <= ssthresh && last_acked < ackn_num){
+                    cwnd += ackn_num - last_acked;
+                }
+                else{
+                    cwnd += (1/cwnd);
+                }
+                
                 last_acked = max(last_acked, ackn_num); // only check the biggest ACK. Cumulative ack.
                 printf("Returned ack num: %d\n", ackn_num); 
+
                 //printf("%d\n", recvpkt->hdr.ctr_flags);
                 if(recvpkt->hdr.ctr_flags == END){
                     break;
