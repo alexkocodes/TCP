@@ -24,7 +24,7 @@
 
 int next_seqno=0;
 int send_base=0;
-int cwnd = 10; // change here
+// int cwnd = 10; // change here
 
 float cwnd = 1.0; //
 int ssthresh = 64; //slow start threshold
@@ -41,7 +41,6 @@ tcp_packet *recvpkt;
 sigset_t sigmask;   
 
 tcp_packet *tcp_array[10];
-tcp_packet *sender_window;
 
 void start_timer()
 {
@@ -149,7 +148,7 @@ int main (int argc, char **argv)
     while (1)
     { 
         // while loop for sending
-        while(last_sent - last_acked <= floor(cwnd) -1 && flag == 1){
+        while(last_sent - last_acked <= ((int)(floor(cwnd))) -1 && flag == 1){
 
             len = fread(buffer, 1, DATA_SIZE, fp); 
             if ( len <= 0)
@@ -161,7 +160,7 @@ int main (int argc, char **argv)
                     sndpkt->hdr.ctr_flags = END;
                     sendto(sockfd, sndpkt, TCP_HDR_SIZE,  0,
                             (const struct sockaddr *)&serveraddr, serverlen);
-                    tcp_array[cwnd-1] = sndpkt;
+                    tcp_array[((int)(floor(cwnd)))-1] = sndpkt;
                     flag = 0;
 
                 }
@@ -194,18 +193,18 @@ int main (int argc, char **argv)
                 }
                 else{
                     last_sent = send_base/1456;
-                    printf("last send: %d\n", last_sent);
+                    printf("last send: %d and cwnd: %d\n", last_sent, ((int)(floor(cwnd))));
                 }
 
                 if(last_sent<cwnd){
-                    tcp_array[ last_sent % cwnd] = sndpkt;
+                    tcp_array[ last_sent % ((int)(floor(cwnd)))] = sndpkt;
                 }
                 else{
                     free(tcp_array[0]); // free the acked packet here
                     for(int i=0; i<cwnd-1; i++){
                         tcp_array[i] = tcp_array[i+1];
                     };
-                    tcp_array[cwnd-1] = sndpkt;
+                    tcp_array[((int)(floor(cwnd)))-1] = sndpkt;
                 }
 
 
@@ -227,7 +226,6 @@ int main (int argc, char **argv)
                 printf("%d \n", get_data_size(recvpkt));
                 
                 ackn_num = recvpkt->hdr.ackno/1456 ; // update the last_acked cursor. Move forward by 1.
-<<<<<<< HEAD
                 if(cwnd <= ssthresh && last_acked < ackn_num){
                     cwnd += ackn_num - last_acked;
                 }
@@ -235,12 +233,10 @@ int main (int argc, char **argv)
                     cwnd += (1/cwnd);
                 }
                 
-=======
                 
                 if (ackn_num == last_acked){
                     resend_packets(SIGALRM);
                 }
->>>>>>> 23bbb13037d7adab6043747a71cb0f3e6f75227a
                 last_acked = max(last_acked, ackn_num); // only check the biggest ACK. Cumulative ack.
                 printf("Returned ack num: %d\n", ackn_num); 
 
